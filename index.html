@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="author" content="Abhay Pai">
+  <meta name="theme-color" content="#317EFB">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <meta name="keywords" content="covid19, covid-19, corona, cornavirus, virus, map, stats, worldwide">
+  <meta name="description" content="Graph representatin of worldwide map on covid-19">
+  <title>CoronaVirus Global Map | Abhay Pai</title>
+</head>
+<style>
+  #map {
+    width: 100%;
+    height: 500px;
+    overflow: hidden;
+  }
+  [aria-labelledby="id-79-title"] {
+    display: none;
+  }
+</style>
+<body>
+  <span>These Data is being collected from <a href="https://github.com/javieraviles/covidAPI" target="_blank">covidAPI</a>.</span>
+  <div id="map"></div>
+
+  <!-- Resources -->
+  <script src="https://www.amcharts.com/lib/4/core.js"></script>
+  <script src="https://www.amcharts.com/lib/4/maps.js"></script>
+  <script src="https://www.amcharts.com/lib/4/geodata/worldLow.js"></script>
+  <script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+  <script>
+    const covid_fetch = fetch('https://coronavirus-19-api.herokuapp.com/countries')
+      .then(
+        res => {
+          return res.json();
+        }
+      )
+      .catch(
+        error => {
+          console.log(error);
+        }
+      );
+
+    const coordinate_fetch = fetch('/covid19-map/coordinates.json')
+      .then(
+        res => {
+          return res.json();
+        }
+      )
+      .catch(
+        error => {
+          console.log(error);
+        }
+      );
+
+    Promise.all([covid_fetch, coordinate_fetch])
+      .then(
+        data => {
+          let covid_data = data[0];
+          let coordinate_data = data[1];
+          let covid_coordinate = data[0].slice(0);
+
+          for (let i = 0 ; i < covid_coordinate.length ; i++){
+            for (let j = 0; j < coordinate_data.length ; j++) {
+              if (covid_coordinate[i].country == coordinate_data[j].name) {
+                covid_coordinate[i].lat = coordinate_data[j].lat;
+                covid_coordinate[i].lon = coordinate_data[j].lon;
+              }
+            };
+          };
+
+          if(covid_coordinate.length !== data[0].length) console.log('please check mapped country name again');
+
+          drawMap(covid_coordinate);
+        }
+      )
+      .catch(
+        error => {
+          console.log('Error: Fetching', error)
+        }
+      );
+
+    let drawMap = (covid19) => {
+      am4core.ready(function() {
+      am4core.useTheme(am4themes_animated);
+
+      let chart = am4core.create("map", am4maps.MapChart);
+      chart.geodata = am4geodata_worldLow;
+      chart.projection = new am4maps.projections.Miller();
+      chart.background.fill = '#000';
+      chart.background.opacity = 0.5;
+
+      let polygonSeries = chart.series.push(new am4maps.MapPolygonSeries());
+      polygonSeries.exclude = ["AQ"];
+      polygonSeries.useGeodata = true;
+
+      let polygonTemplate = polygonSeries.mapPolygons.template;
+      polygonTemplate.tooltipText = "{name}";
+      polygonTemplate.polygon.fillOpacity = 0.6;
+
+      let hs = polygonTemplate.states.create("hover");
+      hs.properties.fill = chart.colors.getIndex(0);
+
+      let imageSeries = chart.series.push(new am4maps.MapImageSeries());
+      imageSeries.mapImages.template.propertyFields.longitude = "lon";
+      imageSeries.mapImages.template.propertyFields.latitude = "lat";
+      imageSeries.mapImages.template.pointerOrientation = "vertical";
+      imageSeries.mapImages.template.tooltipHTML = `{country}<br>
+      Total Cases: {cases}<br>
+      Todays Cases: {todayCases}<br>
+      Deceased: {deaths}<br>
+      Todays Death: {todayDeaths}<br>
+      Total Recovered: {recovered}<br>
+      Total Active: {active}<br>
+      Critical: {critical}<br>
+      `;
+      imageSeries.mapImages.template.propertyFields.url = "url";
+
+      let circle = imageSeries.mapImages.template.createChild(am4core.Circle);
+      circle.radius = 1;
+      circle.propertyFields.fill = "color";
+
+      let circle2 = imageSeries.mapImages.template.createChild(am4core.Circle);
+      circle2.radius = 5;
+      circle2.propertyFields.fill = "color";
+
+      let colorSet = new am4core.ColorSet();
+
+      for(let i = 0; i < covid19.length; i++) {
+        covid19[i].color = colorSet.next();
+      }
+
+      let filtered_covid19 = covid19.filter(function( obj ) {
+        return obj.country !== 'MS Zaandam';
+      });
+
+      imageSeries.data = filtered_covid19;
+
+      });
+    };
+  </script>
+</body>
+</html>
