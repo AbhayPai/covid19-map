@@ -134,7 +134,8 @@
       }
 
       let filtered_covid19 = covid19.filter(function( obj ) {
-        return obj.country !== 'MS Zaandam';
+        return obj.country !== 'MS Zaandam' && obj.country !== 'Channel Islands' && obj.country !== 'Diamond Princess'
+          && obj.country !== 'World';
       });
 
       imageSeries.data = filtered_covid19;
