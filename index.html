@@ -44,7 +44,7 @@
         }
       );
 
-    const coordinate_fetch = fetch('/covid19-map/coordinates.json')
+    const coordinate_fetch = fetch('https://gist.githubusercontent.com/AbhayPai/2fb6c6e5e20f5c186b8cae5dae85f437/raw/d62a22c7512b47613bd4a8a0ba794017ab598352/country-coordinates.json')
       .then(
         res => {
           return res.json();
